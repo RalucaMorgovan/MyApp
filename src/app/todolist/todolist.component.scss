@@ -1,0 +1,132 @@
+.background-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    background: linear-gradient(90deg, #f25caf 0%, #f28080 88%);
+  }
+  
+  .todo {
+    width: 100%;
+    max-width: 750px;
+    margin: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 40px;
+    margin-left: 100px;
+    box-shadow: 0px 4px 8px #00000080;
+  }
+  
+  .todo h2, h3 {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+.container{
+    position: center;
+}
+
+// .bi-card-text {
+//   position:  absolute;
+//   top: 173px;
+//   right: 690px;
+//   font-size: 18px;
+//   color: #000000;
+//   font-size: medium;
+
+// }
+
+input[type="text"],
+input[type="date"],
+input[type="time"] {
+    width: 100%;
+    height: 35px;
+    padding: 10px;
+    font-size: 14px;
+    border: 2px solid #f28080;
+    outline: none;
+    box-shadow: none;
+
+}
+
+input[type="text"]:hover,
+input[type="date"]:hover,
+input[type="time"]:hover {
+  
+    outline: none; 
+    box-shadow: none; 
+    border-color: #f28080; 
+}
+
+
+.icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.bi-card-text, .bi-person{
+  position: absolute;
+  right: 10px;
+}
+
+.stroke{
+  text-decoration: line-through
+}
+
+
+.person-list {
+  background-color: #fff;
+  border-radius: 10px;
+  max-width: 500px; 
+  padding: 30px;
+  margin-left: -100px;
+  box-shadow: 0px 4px 8px #00000080;
+}
+
+select {
+  width: 100%;
+  height: 45px;
+  padding: 10px;
+  font-size: 14px;
+  border: 2px solid #f28080;
+  outline: none;
+  box-shadow: none;
+}
+
+select:hover {
+  outline: none; 
+  box-shadow: none; 
+  border-color: #f28080; 
+}
+
+
+.person-list {
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+  margin-bottom: 20px;
+}
+
+.add-person-form {
+  border: 1px solid #f28080;
+  border-radius: 8px;
+  padding: 15px;
+  background-color: #f9f9f9;
+}
+
+.person-details {
+  max-width: 300px;
+}
+
+.person-list table {
+  margin-left: 10px; /* Ajustează spațiul de la stânga dacă este nevoie */
+}
+
+/* Opțional: ajustează marginea din stânga a întregii coloane de persoane */
+.col-md-4 {
+  padding-left: 0; /* sau adaugă o valoare potrivită */
+}
