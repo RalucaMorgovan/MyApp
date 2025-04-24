@@ -1,393 +1,406 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { v4 as uuid } from 'uuid';
 import Swal from 'sweetalert2';
 import * as moment from 'moment';
-import {HttpClientModule, HttpHeaders} from '@angular/common/http';
-import {FormsModule,ReactiveFormsModule} from '@angular/forms'
-import {RouterOutlet} from '@angular/router'
-import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { CalendarOptions } from '@fullcalendar/core'; 
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import { read, utils, writeFile } from 'xlsx';
+// alte importuri...
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
 
 @Component({
   selector: 'app-todolist',
   templateUrl: './todolist.component.html',
   styleUrls: ['./todolist.component.scss']
 })
-export class TodolistComponent implements OnInit{
+export class TodolistComponent implements OnInit {
+  @ViewChild('importFile') importFile!: ElementRef;
+
+  // Sarcini
   taskArray: Array<any> = [];
   newtask: string = '';
   edited: boolean = false;
   editID: string | null = null;
+
+  //Ora
   minDate: string = moment().format('YYYY-MM-DD');
-  minTime: string = '2024-11-01 08:00';
-  maxTime: string = '2024-11-01 18:00';
+  minTime: string = '2024-11-01T08:00';
+  maxTime: string = '2024-11-01T18:00';
+
   APIURL: string = 'http://localhost:8000';
+
+  // Persoana
+  personsArray: Array<any> = [];
+  selectedPersonId: string = "";
+  showPersonForm: boolean = false;
+  selectedPerson: any = null;
+  tasksPerson: Array<any> = [];
+  selectedPersonName: string = "";
+  editedPerson: boolean = false;
+  editPersonID: number | null = null;
+
+  // Calendar
+  calendarOptions: CalendarOptions = {
+    plugins: [dayGridPlugin, interactionPlugin],
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,dayGridWeek,dayGridDay'
+    },
+    events: []  
+  };
 
   constructor(private http: HttpClient) {
     this.get_tasks();
   }
 
   ngOnInit(): void {
-    // const savedTasks = localStorage.getItem('tasks');
-    // if (savedTasks) {
-    //   this.taskArray = JSON.parse(savedTasks);
-    // } 
     this.getPerson();
   }
-  
+
 
   get_tasks() {
-    this.http.get( 'http://localhost:8000/get_tasks').subscribe((res :any) => {
-      console.log("S-au primit datele");
-      this.taskArray = res;
-    });
+    this.http.get('http://localhost:8000/get_tasks')
+      .subscribe((res: any) => {
+        console.log("S-au primit datele de la /get_tasks");
+        this.taskArray = res;
+        this.setCalendarEventsFromTasks();
+      });
   }
-  
 
-  submit_task(form: NgForm){
-    if(this.editID){
+  submit_task(form: NgForm) {
+    if (this.editID) {
       this.updateTask(form);
-    }
-    else {
+    } else {
       this.add_tasks(form);
     }
   }
 
+  add_tasks(form: NgForm) {
+    if (form.invalid) return;
 
-    add_tasks(form: NgForm) {
-      if (form.invalid)
-      return;
-      
-          const body = new FormData();
-          // body.append('task', this.newtask);
-          // body.append('id', uuid());
-          body.append('descriere', form.controls['descriere'].value); 
-          body.append('data', form.controls['date'].value); 
-          body.append('ora', form.controls['time'].value); 
-          body.append('person_id', this.selectedPersonId); 
+    const body = new FormData();
+    body.append('descriere', form.controls['descriere'].value);
+    body.append('data', form.controls['date'].value);
+    body.append('ora', form.controls['time'].value);
+    body.append('person_id', this.selectedPersonId);
+    body.append('difficulty', form.controls['difficulty'].value);
 
-        
-          var body2={
-            id: 123,
-            nume: "Raluca"
-          }
-          
-          this.http.post('http://localhost:8000/add_tasks', body).subscribe((res:any) => {
-              // alert('S-a adaugat cu succes');
-              console.log("Mesaj de la add_task");
-              this.get_tasks();
-              this.newtask = '';
-            });
-            form.reset();
-            this.selectedPersonId = "";
-            localStorage.setItem('tasks', JSON.stringify(this.taskArray)); 
-        }
-          
-
-
-    delete_tasks(id: string) {
-      const swalWithBootstrapButtons = Swal.mixin({
-        customClass: {
-          confirmButton: 'btn btn-success',
-          cancelButton: 'btn btn-danger'
-        },
-        buttonsStyling: false
+    this.http.post('http://localhost:8000/add_tasks', body)
+      .subscribe((res: any) => {
+        console.log("Mesaj de la /add_tasks:", res);
+        this.get_tasks();
+        this.newtask = '';
       });
-  
-      swalWithBootstrapButtons.fire({
-        title: 'Esti sigur ca vrei sa stergi aceasta sarcina?',
-        text: 'Nu vei mai putea recupera sarcina!',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Da, sterge sarcina!',
-        cancelButtonText: 'Nu, anulează!'
-      }).then((result) => {
-        if (result.isConfirmed) {
-        //   const body = new FormData();
-        // body.append('id', id);
-  
-        this.http.delete('http://localhost:8000/delete_tasks/' + id).subscribe(() => {
-            // alert('S-a sters');
-            this.get_tasks();
-          }
-        );
-          this.taskArray = this.taskArray.filter(task => task.id !== id);
-          localStorage.setItem('tasks', JSON.stringify(this.taskArray));
-          swalWithBootstrapButtons.fire('Sarcina a fost stearsa!', '', 'success');
-        } else if (result.dismiss === Swal.DismissReason.cancel) {
-          swalWithBootstrapButtons.fire('Anulat', '', 'error');
-        }
-      });
-      
-    }
 
-    updateTask(form: NgForm) {
-      // const taskData = {
-      //   // id: this.edited ? this.editID : uuid(),
-      //   descriere: form.controls['descriere'].value,
-      //   data: form.controls['date'].value,
-      //   ora: form.controls['time'].value,
-      //   isCompleted: false
-      // };
-      const body = new FormData();
-      // body.append('task', this.newtask);
-      // body.append('id', uuid());
-      body.append('descriere', form.controls['descriere'].value); 
-      body.append('data', form.controls['date'].value); 
-      body.append('ora', form.controls['time'].value); 
-      body.append('person_id', this.selectedPersonId); 
+    form.reset();
+    this.selectedPersonId = "";
+    localStorage.setItem('tasks', JSON.stringify(this.taskArray));
+  }
 
-  
-      if (this.edited) {
-        this.http.put(`http://localhost:8000/update_tasks/`+ this.editID, body).subscribe(
-          (res: any) => {
-            
-            const index = this.taskArray.findIndex(task => task.id === this.editID);
+  updateTask(form: NgForm) {
+    const body = new FormData();
+    body.append('descriere', form.controls['descriere'].value);
+    body.append('data', form.controls['date'].value);
+    body.append('ora', form.controls['time'].value);
+    body.append('person_id', this.selectedPersonId);
+    body.append('difficulty', form.controls['difficulty'].value);
+
+    if (this.edited) {
+      this.http.put(`http://localhost:8000/update_tasks/${this.editID}`, body)
+        .subscribe((res: any) => {
+          const index = this.taskArray.findIndex(task => task.id === this.editID);
+          if (index !== -1) {
             this.taskArray[index].descriere = form.controls['descriere'].value;
             this.taskArray[index].data = form.controls['date'].value;
             this.taskArray[index].ora = form.controls['time'].value;
             this.taskArray[index].person_id = Number(this.selectedPersonId);
+            this.taskArray[index].difficulty = form.controls['difficulty'].value;
+          }
 
-            this.edited = false;
-            this.editID = null;
-            form.reset();
-            this.selectedPersonId = '';
-
-          });
-      } else {
-        this.http.post('http://localhost:8000/add_tasks',body).subscribe(
-          (res: any) => {
-            this.taskArray.push(res);
-            form.reset();
-          });
-      }
-  
-      // localStorage.setItem('tasks', JSON.stringify(this.taskArray));
+          this.edited = false;
+          this.editID = null;
+          form.reset();
+          this.selectedPersonId = '';
+          this.setCalendarEventsFromTasks();
+        });
+    } else {
+      this.http.post('http://localhost:8000/add_tasks', body)
+        .subscribe((res: any) => {
+          this.taskArray.push(res);
+          form.reset();
+          this.setCalendarEventsFromTasks();
+        });
     }
-
-
-
-  // onSubmit(form: NgForm) {
-  //   if (form.invalid) return;
-
-  //   const taskData = {
-  //     id: this.edited ? this.editID : uuid(),
-  //     nume: form.controls['task'].value,
-  //     date: form.controls['date'].value,
-  //     time: form.controls['time'].value,
-  //     isCompleted: false
-  //   };
-
-  //   if (this.edited) {
-  //     const index = this.taskArray.findIndex(task => task.id === this.editID);
-  //     this.taskArray[index] = taskData;
-  //     this.edited = false;
-  //     this.editID = null;
-  //   } else {
-  //     this.taskArray.push(taskData);
-  //   }
-
-  //   form.reset();
-  //   localStorage.setItem('tasks', JSON.stringify(this.taskArray));
-  // }
-
+  }
 
   onEdit(id: string) {
     const task = this.taskArray.find(task => task.id === id);
-
     if (task) {
       this.edited = true;
       this.editID = id;
-
-      (<HTMLInputElement>document.getElementById('descriere')).value = task.descriere;
-      (<HTMLInputElement>document.getElementById('data')).value = moment(task.data).format("YYYY-MM-DD");
-      (<HTMLInputElement>document.getElementById('ora')).value = task.ora;
+      (document.getElementById('descriere') as HTMLInputElement).value = task.descriere;
+      (document.getElementById('data') as HTMLInputElement).value = moment(task.data).format("YYYY-MM-DD");
+      (document.getElementById('ora') as HTMLInputElement).value = task.ora;
       this.selectedPersonId = task.person_id?.toString() ?? "";
-
+      (document.getElementById('difficulty') as HTMLSelectElement).value = task.difficulty;
     }
   }
 
+  delete_tasks(id: string) {
+    const swalWithBootstrapButtons = Swal.mixin({
+      customClass: {
+        confirmButton: 'btn btn-success',
+        cancelButton: 'btn btn-danger'
+      },
+      buttonsStyling: false
+    });
 
-  // onDelete(id: string) {
-  //   const swalWithBootstrapButtons = Swal.mixin({
-  //     customClass: {
-  //       confirmButton: 'btn btn-success',
-  //       cancelButton: 'btn btn-danger'
-  //     },
-  //     buttonsStyling: false
-  //   });
-
-  //   swalWithBootstrapButtons.fire({
-  //     title: 'Esti sigur ca vrei sa stergi aceasta sarcina?',
-  //     text: 'Nu vei mai putea recupera sarcina!',
-  //     icon: 'warning',
-  //     showCancelButton: true,
-  //     confirmButtonText: 'Da, sterge sarcina!',
-  //     cancelButtonText: 'Nu, anulează!'
-  //   }).then((result) => {
-  //     if (result.isConfirmed) {
-  //       const body = new FormData();
-  //     body.append('id', id);
-
-  //     this.http.post('http://localhost:8000/delete_tasks', body).subscribe(() => {
-  //         // alert('S-a sters');
-  //         this.get_tasks();
-  //       }
-  //     );
-  //       this.taskArray = this.taskArray.filter(task => task.id !== id);
-  //       localStorage.setItem('tasks', JSON.stringify(this.taskArray));
-  //       swalWithBootstrapButtons.fire('Sarcina a fost stearsa!', '', 'success');
-  //     } else if (result.dismiss === Swal.DismissReason.cancel) {
-  //       swalWithBootstrapButtons.fire('Anulat', '', 'error');
-  //     }
-  //   });
-  // }
-
+    swalWithBootstrapButtons.fire({
+      title: 'Esti sigur ca vrei sa stergi aceasta sarcina?',
+      text: 'Nu vei mai putea recupera sarcina!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Da, sterge sarcina!',
+      cancelButtonText: 'Nu, anuleaza!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.http.delete('http://localhost:8000/delete_tasks/' + id)
+          .subscribe(() => {
+            this.get_tasks();
+          });
+        this.taskArray = this.taskArray.filter(task => task.id !== id);
+        localStorage.setItem('tasks', JSON.stringify(this.taskArray));
+        swalWithBootstrapButtons.fire('Stearsa!', '', 'success');
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        swalWithBootstrapButtons.fire('Anulat', '', 'error');
+      }
+    });
+  }
 
   onComplete(id: string) {
     const task = this.taskArray.find(task => task.id === id);
-  
     if (task) {
-
       task.iscompleted = !task.iscompleted;
-  
       const body = new FormData();
       body.append('isCompleted', task.iscompleted.toString());
-  
-      this.http.put(`http://localhost:8000/completed/${id}`, body).subscribe(() => {
-        console.log(`Actualizat`);
-        this.sortTasks();
-  
-        // localStorage.setItem('tasks', JSON.stringify(this.taskArray));
-      });
+      this.http.put(`http://localhost:8000/completed/${id}`, body)
+        .subscribe(() => {
+          console.log("Actualizat");
+          this.sortTasks();
+          this.setCalendarEventsFromTasks();
+        });
     }
   }
-  
-  
-
 
   sortTasks() {
     this.taskArray = this.taskArray.sort((a, b) => Number(a.isCompleted) - Number(b.isCompleted));
   }
 
-  
-  tasksPerson: Array<any> = [];
-  selectedPersonId: string = "";
-  personsArray: Array<any> = [
-  // { person_id: 1, person_name: "Maria", person_dob: "1999-12-12", person_role: "Gospodina"},
-  // { person_id: 2, person_name: "Stefan", person_dob: "1979-02-04", person_role: "Mecanic"},
-  // { person_id: 3, person_name: "Ioan Marius",person_dob: "2000-04-12", person_role: "Profesor"}
-];
 
-getPerson() {
-  this.http.get('http://localhost:8000/get_person').subscribe((res: any) => {
-    this.personsArray = res;
-    console.log("Persoane primite:", this.personsArray);
-  });
-}
-
-addPerson(form: NgForm) {
-  if (form.invalid) return;
-
-  const body = new FormData();
-  body.append('person_name', form.controls['person_name'].value);
-  body.append('person_dob', form.controls['person_dob'].value);
-  body.append('person_role', form.controls['person_role'].value);
-
-  this.http.post('http://localhost:8000/add_person', body).subscribe((res: any) => {
-    this.getPerson(); 
-    form.reset();
-  });
-}
-
-deletePerson(id: number) {
-  const swalWithBootstrapButtons = Swal.mixin({
-    customClass: {
-      confirmButton: 'btn btn-success',
-      cancelButton: 'btn btn-danger'
-    },
-    buttonsStyling: false
-  });
-
-  swalWithBootstrapButtons.fire({
-    title: 'Esti sigur?',
-    text: 'Aceasta actiune nu poate fi anulata!',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Da, sterge!',
-    cancelButtonText: 'Anuleaza'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      this.http.delete(`http://localhost:8000/delete_person/${id}`).subscribe(() => {
-        console.log("Persoana stearsa cu succes!");
-        this.getPerson(); 
-        swalWithBootstrapButtons.fire('Sters!', 'Persoana a fost stearsa.', 'success');
+  getPerson() {
+    this.http.get('http://localhost:8000/get_person')
+      .subscribe((res: any) => {
+        this.personsArray = res;
+        console.log("Persoane primite:", this.personsArray);
       });
-    }
-  });
-}
-tasksForPerson: Array<any> = [];
-selectedPersonName: string = "";
-
-getTasksForPerson(personId: number, personName: string) {
-  this.http.get(`http://localhost:8000/get_tasks_by_person/${personId}`).subscribe((res: any) => {
-    this.tasksForPerson = res;
-    this.selectedPersonName = personName;
-    console.log("Task-urile pentru", personName, res);
-  });
-}
-
-
-editedPerson: boolean = false;
-editPersonID: number | null = null;
-
-onEditPerson(person: any) {
-  (<HTMLInputElement>document.getElementById('person_name')).value = person.person_name;
-  (<HTMLInputElement>document.getElementById('person_dob')).value = moment(person.person_dob).format("YYYY-MM-DD");
-  (<HTMLInputElement>document.getElementById('person_role')).value = person.person_role;
-  
-  this.editedPerson = true;
-  this.editPersonID = person.person_id;
-  
-}
-submitPerson(form: NgForm) {
-  if (form.invalid) return;
-  
-  if (this.editedPerson && this.editPersonID !== null) {
-    this.updatePerson(form);
-  } else {
-    this.addPerson(form);
   }
-}
-updatePerson(form: NgForm) {
 
-  const body = new FormData();
-  body.append('person_name', form.controls['person_name'].value);
-  body.append('person_dob', form.controls['person_dob'].value);
-  body.append('person_role', form.controls['person_role'].value);
+  addPerson(form: NgForm) {
+    if (form.invalid) return;
+    const body = new FormData();
+    body.append('person_name', form.controls['person_name'].value);
+    body.append('person_dob', form.controls['person_dob'].value);
+    body.append('person_role', form.controls['person_role'].value);
 
-  if(this.editPersonID){
-  this.http.put(`http://localhost:8000/update_person/` +this.editPersonID, body)
-    .subscribe((res: any) => {
-         this.getPerson(); 
-         this.editedPerson = false;
-         this.editPersonID = null;
-         form.reset();
+    this.http.post('http://localhost:8000/add_person', body)
+      .subscribe((res: any) => {
+        this.getPerson();
+        form.reset();
+      });
+  }
 
+  deletePerson(id: number) {
+    const swalWithBootstrapButtons = Swal.mixin({
+      customClass: {
+        confirmButton: 'btn btn-success',
+        cancelButton: 'btn btn-danger'
+      },
+      buttonsStyling: false
+    });
+
+    swalWithBootstrapButtons.fire({
+      title: 'Esti sigur?',
+      text: 'Aceasta acțiune nu poate fi anulata!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Da, sterge!',
+      cancelButtonText: 'Anuleaza'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.http.delete(`http://localhost:8000/delete_person/${id}`)
+          .subscribe(() => {
+            console.log("Persoana stearsa cu succes!");
+            this.getPerson();
+            swalWithBootstrapButtons.fire('Stearsa!', 'Persoana a fost stearsa.', 'success');
+          });
+      }
     });
   }
-}  
 
-showPersonForm: boolean = false;
-selectedPerson: any = null;
+  getTasksForPerson(personId: number, personName: string) {
+    this.http.get(`http://localhost:8000/get_tasks_by_person/${personId}`)
+      .subscribe((res: any) => {
+        this.tasksPerson = res;
+        this.selectedPersonName = personName;
+        console.log("Task-urile pentru", personName, res);
+      });
+  }
 
-toggleAddPersonForm(): void {
-  this.showPersonForm = !this.showPersonForm;
+  onEditPerson(person: any) {
+    this.showPersonForm = true;
+    this.editedPerson = true;
+    this.editPersonID = person.person_id;
+
+    setTimeout(() => {
+      (document.getElementById('person_name') as HTMLInputElement).value = person.person_name;
+      (document.getElementById('person_dob') as HTMLInputElement).value = moment(person.person_dob).format("YYYY-MM-DD");
+      (document.getElementById('person_role') as HTMLInputElement).value = person.person_role;
+    });
+  }
+
+  submitPerson(form: NgForm) {
+    if (form.invalid) return;
+    if (this.editedPerson && this.editPersonID !== null) {
+      this.updatePerson(form);
+    } else {
+      this.addPerson(form);
+    }
+  }
+
+  updatePerson(form: NgForm) {
+    const body = new FormData();
+    body.append('person_name', form.controls['person_name'].value);
+    body.append('person_dob', form.controls['person_dob'].value);
+    body.append('person_role', form.controls['person_role'].value);
+
+    if (this.editPersonID) {
+      this.http.put(`http://localhost:8000/update_person/${this.editPersonID}`, body)
+        .subscribe((res: any) => {
+          this.getPerson();
+          this.editedPerson = false;
+          this.editPersonID = null;
+          form.reset();
+        });
+    }
+  }
+
+  toggleAddPersonForm(): void {
+    this.showPersonForm = !this.showPersonForm;
+  }
+
+  showPersonDetails(person: any) {
+    this.selectedPerson = person;
+  }
+
+
+
+  setCalendarEventsFromTasks(): void {
+    const colors: { [key: string]: string } = {
+      usor: '#28a745',   
+      mediu: '#ffc107',  
+      greu: '#fd7e14',   
+      extrem: '#dc3545'  
+    };
+
+    const events = this.taskArray.map(task => {
+      const start = `${moment(task.data).format('YYYY-MM-DD')}T${task.ora}`;
+      const color = colors[task.difficulty];
+
+      return {
+        title: `${task.descriere} - ${task.person_name}`,
+        start,
+        allDay: false,
+        backgroundColor: color,
+  
+      };
+    });
+
+    this.calendarOptions.events = events;
+  }
+
+
+
+ /* ===========================================
+   ============  EXPORT PDF  ==================
+   =========================================== */
+exportPDF(): void {
+  /* 1) inițializează documentul */
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  /* 2) antet simplu */
+  doc.setFontSize(16);
+  doc.text('Lista de sarcini', 14, 15);
+
+  /* 3) transformă taskArray → rânduri tabel */
+  const rows = this.taskArray.map((t, i) => ([
+    i + 1,
+    t.descriere,
+    moment(t.data).format('YYYY-MM-DD'),
+    t.ora,
+    t.person_name,
+    t.difficulty,
+    t.iscompleted ? 'Completat' : 'În așteptare'
+  ]));
+
+  /* 4) desenează tabelul */
+  autoTable(doc, {
+    head: [['#', 'Descriere', 'Data', 'Ora', 'Persoana', 'Dificultate', 'Status']],
+    body: rows,
+    startY: 22,          // puțin sub titlu
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [220, 53, 69] }   // roșu (Bootstrap danger)
+  });
+
+  /* 5) descarcă fișierul */
+  doc.save('taskuri.pdf');
 }
 
-showPersonDetails(person: any) {
-  this.selectedPerson = person;
-}
+
+
+/** fișierul ales de utilizator (sau null) */
+selectedImage: File | null = null;
+/** preview base64 pentru <img> */
+imagePreview: string | null = null;
+
+onImageSelected(input: HTMLInputElement): void {
+  if (!input.files || input.files.length === 0) {
+    this.selectedImage = null;
+    this.imagePreview  = null;
+    return;
+  }
+
+  this.selectedImage = input.files[0];
+
+  // generează preview (Base64)
+  const reader = new FileReader();
+  reader.onload = () => (this.imagePreview = reader.result as string);
+  reader.readAsDataURL(this.selectedImage);
 }
 
+
+openFacebook(): void {
+  window.open('https://www.facebook.com/', '_blank');
+}
+
+}

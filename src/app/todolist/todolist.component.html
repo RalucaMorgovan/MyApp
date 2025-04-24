@@ -1,171 +1,35 @@
 <div class="background-container">
-  <div class="container mt-3">
-    <div class="todo">
-      <h2 class="text-danger">To Do List</h2>
-      
-      <form (ngSubmit)="submit_task(taskForm)" #taskForm="ngForm">
-        <div class="box mt-3">
-          <div class="container-input">
-            <label for="descriere" class="form-label">Descrierea sarcinii</label>
-            <div class="icon"> 
-              <span class="bi bi-card-text"></span>
-              <input type="text" class="form-control" id="descriere" placeholder="Sarcina este..." ngModel name="descriere" required>
-            </div>
-          </div>
-        </div>
-
-        <div class="box mt-3 mb-3">
-          <label for="data" class="form-label">Selecteaza data</label>
-          <input type="date" class="form-control" min="{{minDate}}" id="data" ngModel name="date" required>
-        </div>
-
-        <div class="box mb-3">
-          <label for="ora" class="form-label">Selecteaza ora</label>
-          <input type="time" class="form-control" min="{{minTime}}" max="{{maxTime}}" id="ora" ngModel name="time" required>
-        </div>
-
-        <div class="box mb-3">
-          <label for="person" class="form-label">Selecteaza persoana</label>
-          <select class="form-control" id="person" [(ngModel)]="selectedPersonId" name="personId" required>
-            <option value="">Alege o persoana</option>
-            <option *ngFor="let person of personsArray" [value]="person.person_id">
-              {{ person.person_name }} - {{ person.person_role }}
-            </option>
-          </select>
-        </div>
-
-        <div class="text-end">
-          <button type="submit" id="add" class="btn btn-primary bg-danger border-0">
-            {{ editID ? 'Actualizeaza ' : 'Adauga' }}
-          </button>
-        </div>
-      </form>
-
-      <!-- Lista sarcinilor -->
-      <h3 class="text-danger">Sarcini</h3>
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Descriere</th>
-            <th scope="col">Data</th>
-            <th scope="col">Ora</th>
-            <th scope="col">Persoana</th>
-            <th scope="col">Status</th>
-            <th scope="col" colspan="3">Controale</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let task of taskArray" [class.stroke]="task.iscompleted">
-            <td>{{ task.descriere }}</td>
-            <td>{{ task.data }}</td>
-            <td>{{ task.ora }}</td>
-            <td>{{ task.person_name}}</td>
-            <td>{{ task.iscompleted ? 'Completat' : 'In asteptare' }}</td>
-            <td>
-              <button class="btn btn-success btn-sm me-2" (click)="onComplete(task.id)" [disabled]="task.iscompleted">
-                <i class="bi bi-check"></i>
-              </button>
-              <button class="btn btn-warning btn-sm me-2" (click)="onEdit(task.id)" [disabled]="task.iscompleted">
-                <i class="bi bi-pencil"></i>
-              </button>
-              <button class="btn btn-danger btn-sm me-2" (click)="delete_tasks(task.id)">
-                <i class="bi bi-trash"></i>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="container mt-3">
-    <div class="row">
-      <div class="col-md-4">
-        <div class="person-list">
-          <h2 class="text-danger">Persoane</h2>
-          <button class="btn btn-primary mb-3" (click)="toggleAddPersonForm()">
-            {{ showPersonForm ? 'Inchide' : 'Adauga persoana' }}
-          </button>
-          <!-- Formularul de adăugare/actualizare persoană -->
-          <div *ngIf="showPersonForm" class="add-person-form mb-3">
-            <form (ngSubmit)="submitPerson(personForm)" #personForm="ngForm">
-              <div class="mb-3">
-                <label for="person_name" class="form-label">Nume persoana</label>
-                <input type="text" class="form-control"  id="person_name" placeholder="Introdu numele" ngModelname="person_name" required>
-              </div>
-              <div class="mb-3">
-                <label for="person_dob" class="form-label">Data nasterii</label>
-                <input type="date"class="form-control" id="person_dob" ngModel name="person_dob"required>
-              </div>
-              <div class="mb-3">
-                <label for="person_role" class="form-label">Rolul</label>
-                <input type="text" class="form-control" id="person_role" placeholder="Rolul este..." ngModelname="person_role"required>
-              </div>
-              <button type="submit" class="btn btn-success">Salveaza</button>
-            </form>
-          </div>
-  
-          <!-- Lista de persoane -->
-          <h3 class="text-danger">Lista Persoane</h3>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Nume</th>
-                <th>Acțiuni</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let person of personsArray">
-                <td>
-                  <a href="#" (click)="showPersonDetails(person)">{{ person.person_name }}</a>
-                </td>
-                <td>
-                  <button class="btn btn-warning btn-sm me-2" (click)="onEditPerson(person)">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button class="btn btn-danger btn-sm me-2" (click)="deletePerson(person.person_id)">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-  
-
-          <div *ngIf="selectedPerson" class="person-details card mt-3">
-            <div class="card-body">
-              <h5 class="card-title">{{ selectedPerson.person_name }}</h5>
-              <p class="card-text">
-                Data nașterii: {{ selectedPerson.person_dob }}<br>
-                Rol: {{ selectedPerson.person_role }}
-              </p>
-              <button class="btn btn-secondary btn-sm" (click)="selectedPerson = null">Închide</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-8">
+  <div class="row">
+    <!-- To Do List -->
+    <div class="col-md-6">
+      <div class="mt-3">
         <div class="todo">
           <h2 class="text-danger">To Do List</h2>
+
           <form (ngSubmit)="submit_task(taskForm)" #taskForm="ngForm">
             <div class="box mt-3">
               <div class="container-input">
                 <label for="descriere" class="form-label">Descrierea sarcinii</label>
-                <div class="icon"> 
+                <div class="icon">
                   <span class="bi bi-card-text"></span>
-                  <input type="text" class="form-control" id="descriere" placeholder="Sarcina este..." ngModel name="descriere" required>
+                  <input type="text" class="form-control" id="descriere" placeholder="Sarcina este..." 
+                         ngModel name="descriere" required>
                 </div>
               </div>
             </div>
+
             <div class="box mt-3 mb-3">
               <label for="data" class="form-label">Selecteaza data</label>
-              <input type="date" class="form-control" min="{{ minDate }}" id="data" ngModel name="date" required>
+              <input type="date" class="form-control" min="{{minDate}}" id="data" 
+                     ngModel name="date" required>
             </div>
+
             <div class="box mb-3">
               <label for="ora" class="form-label">Selecteaza ora</label>
-              <input type="time" class="form-control" min="{{ minTime }}" max="{{ maxTime }}" id="ora" ngModel name="time" required>
+              <input type="time" class="form-control" min="{{minTime}}" max="{{maxTime}}" id="ora" 
+                     ngModel name="time" required>
             </div>
+
             <div class="box mb-3">
               <label for="person" class="form-label">Selecteaza persoana</label>
               <select class="form-control" id="person" [(ngModel)]="selectedPersonId" name="personId" required>
@@ -175,38 +39,64 @@
                 </option>
               </select>
             </div>
+
+            <!-- Dificultatea sarcinii -->
+            <div class="box mb-3">
+              <label for="difficulty" class="form-label">Selectează dificultatea</label>
+              <select class="form-control" id="difficulty" ngModel name="difficulty" required>
+                <option value="">Alege dificultatea</option>
+                <option value="usor">Usor</option>
+                <option value="mediu">Mediu</option>
+                <option value="greu">Greu</option>
+                <option value="extrem">Extrem</option>
+              </select>
+            </div>
+
+            <!-- Butonul de submit -->
             <div class="text-end">
               <button type="submit" id="add" class="btn btn-primary bg-danger border-0">
-                {{ editID ? 'Actualizeazăa' : 'Adauga' }}
+                {{ editID ? 'Actualizeaza' : 'Adauga' }}
               </button>
             </div>
           </form>
-  
-          <!-- Lista sarcinilor -->
+
+          <!-- Tabelul cu sarcini -->
           <h3 class="text-danger">Sarcini</h3>
           <table class="table">
             <thead>
               <tr>
-                <th>Descriere</th>
-                <th>Data</th>
-                <th>Ora</th>
-                <th>Persoana</th>
-                <th>Status</th>
-                <th colspan="3">Controale</th>
+                <th scope="col">Descriere</th>
+                <th scope="col">Data</th>
+                <th scope="col">Ora</th>
+                <th scope="col">Persoana</th>
+                <th scope="col">Dificultate</th>
+                <th scope="col">Status</th>
+                <th scope="col" colspan="3">Controale</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let task of taskArray" [class.stroke]="task.iscompleted">
                 <td>{{ task.descriere }}</td>
-                <td>{{ task.data }}</td>
+                <td>{{ task.data | date:'yyyy-MM-dd' }}</td>
                 <td>{{ task.ora }}</td>
                 <td>{{ task.person_name }}</td>
-                <td>{{ task.iscompleted ? 'Completat' : 'În așteptare' }}</td>
+                <td
+                [ngClass]="{
+                  'bg-success text-white': task.difficulty === 'usor',
+                  'bg-warning text-dark': task.difficulty === 'mediu',
+                  'bg-primary text-white': task.difficulty === 'greu',
+                  'bg-danger  text-white': task.difficulty === 'extrem'
+                }"
+              >
+                {{ task.difficulty }}
+              </td>                <td>{{ task.iscompleted ? 'Completat' : 'În așteptare' }}</td>
                 <td>
-                  <button class="btn btn-success btn-sm me-2" (click)="onComplete(task.id)" [disabled]="task.iscompleted">
+                  <button class="btn btn-success btn-sm me-2" (click)="onComplete(task.id)"
+                          [disabled]="task.iscompleted">
                     <i class="bi bi-check"></i>
                   </button>
-                  <button class="btn btn-warning btn-sm me-2" (click)="onEdit(task.id)" [disabled]="task.iscompleted">
+                  <button class="btn btn-warning btn-sm me-2" (click)="onEdit(task.id)"
+                          [disabled]="task.iscompleted">
                     <i class="bi bi-pencil"></i>
                   </button>
                   <button class="btn btn-danger btn-sm me-2" (click)="delete_tasks(task.id)">
@@ -219,9 +109,143 @@
         </div>
       </div>
     </div>
+
+    <!-- Persoane -->
+    <div class="col-md-6">
+      <div class="container mt-3">
+        <div class="row">
+          <div class="col-md-12">
+            <div class="person-list">
+              <div class="add">
+                <h3 class="text-danger">Lista Persoane</h3>
+                <span class="add-btn" (click)="toggleAddPersonForm()">
+                  <i class="bi" [ngClass]="showPersonForm ? 'bi-x-circle' : 'bi-person-plus'"></i>
+                </span>
+              </div>
+
+              <!-- Tabelul cu persoane -->
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Nume</th>
+                    <th>Actiuni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let person of personsArray">
+                    <td>
+                      <div class="details" (click)="showPersonDetails(person)">
+                        {{ person.person_name }}
+                      </div>
+                    </td>
+                    <td>
+                      <button class="btn btn-warning btn-sm me-2" (click)="onEditPerson(person)">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-danger btn-sm me-2" (click)="deletePerson(person.person_id)">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div *ngIf="showPersonForm" class="add-person-form mb-3">
+                <form (ngSubmit)="submitPerson(personForm)" #personForm="ngForm">
+                  <div class="mb-3">
+                    <label for="person_name" class="form-label">Nume persoana</label>
+                    <input type="text" class="form-control" id="person_name" placeholder="Introdu numele" 
+                           ngModel name="person_name" required>
+                  </div>
+                  <div class="mb-3">
+                    <label for="person_dob" class="form-label">Data nasterii</label>
+                    <input type="date" class="form-control" id="person_dob" ngModel name="person_dob" required>
+                  </div>
+                  <div class="mb-3">
+                    <label for="person_role" class="form-label">Rolul</label>
+                    <input type="text" class="form-control" id="person_role" placeholder="Rolul este..." 
+                           ngModel name="person_role" required>
+                  </div>
+                  <button type="submit" class="btn btn-success">Salveaza</button>
+                </form>
+              </div>
+
+              <div *ngIf="selectedPerson" class="person-details card mt-3">
+                <div class="card-body">
+                  <h5 class="card-title">{{ selectedPerson.person_name }}</h5>
+                  <p class="card-text">
+                    Data nasterii: {{ selectedPerson.person_dob | date:'yyyy-MM-dd' }}<br>
+                    Rol: {{ selectedPerson.person_role }}
+                  </p>
+                  <button class="btn btn-secondary btn-sm" (click)="selectedPerson = null">
+                    Inchide
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Import/Export -->
+        <div class="row mt-4">
+          <div class="col-md-6">
+            <label for="importFile" class="form-label">Import Excel</label>
+            <input type="file" id="RalucaimportFile123" 
+                   accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                   class="form-control">
+          </div>
+
+
+          <div class="col-md-6 d-flex align-items-end justify-content-end">
+            <button type="button"class="btn btn-primary mt-3">
+              Export Excel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  
-  
 
 
+
+  <!-- Upload imagine (doar un fișier) -->
+<div class="box mb-3">
+  <label class="form-label">Încarcă o poză</label>
+
+  <!-- input tip file -->
+  <input
+    type="file"
+    accept="image/*"
+    class="form-control"
+    #fileInput
+    (change)="onImageSelected(fileInput)"
+  />
+
+  <!-- preview mic, doar dacă există imagine încărcată -->
+  <img
+    *ngIf="imagePreview"
+    [src]="imagePreview"
+    class="mt-2 rounded border"
+    style="max-width: 150px"
+  />
+</div>
+
+<!-- Buton care deschide Facebook într-un tab nou -->
+<button
+  type="button"
+  class="btn btn-outline-primary mt-2 ms-2"
+  (click)="openFacebook()"
+>
+  <i class="bi bi-facebook me-1"></i>
+  Facebook
+</button>
+
+
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="calendar-container">
+        <full-calendar [options]="calendarOptions"></full-calendar>
+      </div>
+    </div>
+  </div>
 </div>
